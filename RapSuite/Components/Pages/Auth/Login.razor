@@ -1,0 +1,41 @@
+@page "/login"
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-logo">🎤 RapSuite</h1>
+            <p class="auth-subtitle">AI-Powered Lyrics Creation</p>
+        </div>
+
+        <h2 class="auth-title">Sign In</h2>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">@_errorMessage</div>
+        }
+
+        <EditForm Model="_loginModel" OnValidSubmit="HandleLogin" FormName="login">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <InputText id="email" @bind-Value="_loginModel.Email" class="form-control" placeholder="your@email.com" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <InputText id="password" @bind-Value="_loginModel.Password" type="password" class="form-control" placeholder="Enter password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-auth" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                Sign In
+            </button>
+        </EditForm>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+        </div>
+    </div>
+</div>

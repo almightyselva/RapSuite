@@ -1,0 +1,128 @@
+@page "/albums/{AlbumId}"
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <button class="btn btn-link text-light p-0 mb-1" @onclick="GoBack">← Back to Albums</button>
+            <h2>@(_album?.Name ?? "Album")</h2>
+            <p class="text-muted">@_songs.Count song(s)</p>
+        </div>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Loading songs...</p>
+    </div>
+}
+else if (_songs.Count == 0)
+{
+    <div class="card glass-card empty-state">
+        <div class="card-body text-center py-5">
+            <div class="empty-icon">🎵</div>
+            <h4>No songs in this album</h4>
+            <p class="text-muted">Generate or rephrase lyrics to add songs to this album</p>
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="/generate" class="btn btn-primary">🎤 Generate New</a>
+                <a href="/rephrase" class="btn btn-outline-primary">🔄 Rephrase Existing</a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var song in _songs)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card glass-card song-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="song-title-card">@song.Title</h5>
+                                <div class="song-meta mb-2">
+                                    <span class="badge bg-info">@song.WordCount words</span>
+                                    <span class="badge bg-success">~@song.EstimatedDuration</span>
+                                    <span class="badge bg-secondary">@song.Language</span>
+                                    <span class="badge @(song.GenerationType == "new" ? "bg-primary" : "bg-warning text-dark")">
+                                        @(song.GenerationType == "new" ? "Original" : "Rephrased")
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="song-actions">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteSong(song)" title="Delete">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="song-preview">
+                            <pre class="lyrics-preview">@TruncateLyrics(song.Lyrics, 200)</pre>
+                        </div>
+
+                        <button class="btn btn-sm btn-outline-light mt-2" @onclick="() => ToggleSongExpand(song.Id)">
+                            @(_expandedSongId == song.Id ? "▲ Collapse" : "▼ View Full Lyrics")
+                        </button>
+
+                        @if (_expandedSongId == song.Id)
+                        {
+                            <div class="song-full-lyrics mt-3">
+                                @if (_editingSongId == song.Id)
+                                {
+                                    <textarea @bind="_editLyrics" class="form-control mb-2" rows="15"></textarea>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-success" @onclick="() => SaveSongEdit(song)">Save</button>
+                                        <button class="btn btn-sm btn-secondary" @onclick="CancelEdit">Cancel</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <pre class="lyrics-text">@song.Lyrics</pre>
+                                    <button class="btn btn-sm btn-outline-light mt-2" @onclick="() => StartEdit(song)">
+                                        ✏️ Edit Lyrics
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                        <div class="song-date text-muted mt-2">
+                            <small>@song.CreatedAt.ToString("MMM dd, yyyy h:mm tt")</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Delete Song Confirmation *@
+@if (_showDeleteConfirm)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content glass-card">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Song</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@_deletingSong?.Title</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                    <button class="btn btn-danger" @onclick="DeleteSong" disabled="@_isDeleting">
+                        @if (_isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
