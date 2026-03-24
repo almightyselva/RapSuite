@@ -1,0 +1,127 @@
+@page "/albums"
+
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2>💿 My Albums</h2>
+            <p class="text-muted">Manage your lyrics collections</p>
+        </div>
+        <button class="btn btn-primary" @onclick="ShowCreateDialog">
+            ➕ New Album
+        </button>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Loading albums...</p>
+    </div>
+}
+else if (_albums.Count == 0)
+{
+    <div class="card glass-card empty-state">
+        <div class="card-body text-center py-5">
+            <div class="empty-icon">💿</div>
+            <h4>No albums yet</h4>
+            <p class="text-muted">Create your first album to start saving lyrics</p>
+            <button class="btn btn-primary" @onclick="ShowCreateDialog">Create Album</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var album in _albums)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card glass-card album-card" @onclick="() => ViewAlbum(album.Id)">
+                    <div class="card-body">
+                        <div class="album-cover">
+                            <span class="album-emoji">💿</span>
+                        </div>
+                        <h5 class="album-name">@album.Name</h5>
+                        <p class="album-date text-muted">
+                            Created @album.CreatedAt.ToString("MMM dd, yyyy")
+                        </p>
+                        <div class="album-actions" @onclick:stopPropagation="true">
+                            <button class="btn btn-sm btn-outline-light" @onclick="() => ShowEditDialog(album)">
+                                ✏️
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(album)">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Create/Edit Album Dialog *@
+@if (_showDialog)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content glass-card">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingAlbum == null ? "Create New Album" : "Edit Album")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Album Name</label>
+                        <InputText @bind-Value="_albumName" class="form-control" placeholder="Enter album name" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_dialogError))
+                    {
+                        <div class="alert alert-danger mt-2">@_dialogError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveAlbum" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        @(_editingAlbum == null ? "Create" : "Save")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Delete Confirmation *@
+@if (_showDeleteConfirm)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content glass-card">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Album</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong>@_deletingAlbum?.Name</strong>?</p>
+                    <p class="text-danger">This will also delete all songs in this album. This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                    <button class="btn btn-danger" @onclick="DeleteAlbum" disabled="@_isDeleting">
+                        @if (_isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,190 @@
+@page "/generate"
+
+<div class="page-header">
+    <h2>🎵 Generate New Lyrics</h2>
+    <p class="text-muted">Describe a situation and let AI create a rap song for you</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card glass-card">
+            <div class="card-body">
+                <h5 class="card-title">What's the vibe?</h5>
+
+                <div class="form-group">
+                    <label for="situation">Situation / Theme</label>
+                    <textarea id="situation" @bind="_situation" class="form-control" rows="4"
+                        placeholder="e.g., A heartbroken warrior rising from the ashes to reclaim glory..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="language">Language</label>
+                    <select id="language" @bind="_language" class="form-control">
+                        <option value="English">English</option>
+                        <option value="Tamil">Tamil (செந்தமிழ்)</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="Korean">Korean</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="French">French</option>
+                        <option value="Portuguese">Portuguese</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="mood">Mood / Vibe</label>
+                    <select id="mood" @bind="_mood" class="form-control">
+                        <option value="Energetic">🔥 Energetic</option>
+                        <option value="Dark">🌑 Dark</option>
+                        <option value="Emotional">💔 Emotional</option>
+                        <option value="Hype">⚡ Hype</option>
+                        <option value="Chill">🌊 Chill</option>
+                        <option value="Aggressive">💢 Aggressive</option>
+                        <option value="Inspirational">✨ Inspirational</option>
+                        <option value="Romantic">❤️ Romantic</option>
+                        <option value="Nostalgic">🕰️ Nostalgic</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="duration">Target Duration</label>
+                    <select id="duration" @bind="_targetDuration" class="form-control">
+                        <option value="3">~3 Minutes</option>
+                        <option value="4">~4 Minutes</option>
+                        <option value="5">~5 Minutes</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary btn-generate" @onclick="HandleGenerate" disabled="@_isGenerating">
+                    @if (_isGenerating)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Generating...</span>
+                    }
+                    else
+                    {
+                        <span>🎤 Generate Lyrics</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        @if (_result != null && _result.Success)
+        {
+            <div class="card glass-card lyrics-output">
+                <div class="card-body">
+                    <div class="lyrics-header">
+                        <h4 class="song-title">@_result.Title</h4>
+                        <div class="lyrics-meta">
+                            <span class="badge bg-info">@_result.WordCount words</span>
+                            <span class="badge bg-success">~@_result.EstimatedDuration</span>
+                            <span class="badge bg-secondary">@_language</span>
+                        </div>
+                    </div>
+
+                    <div class="lyrics-content">
+                        <pre class="lyrics-text">@_result.Lyrics</pre>
+                    </div>
+
+                    <div class="lyrics-actions">
+                        <button class="btn btn-outline-primary" @onclick="RegenerateLyrics" disabled="@_isGenerating">
+                            🔄 Regenerate
+                        </button>
+                        <button class="btn btn-success" @onclick="ShowSaveDialog">
+                            💾 Save to Album
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (_result != null && !_result.Success)
+        {
+            <div class="alert alert-danger">
+                <strong>Generation Failed:</strong> @_result.ErrorMessage
+            </div>
+        }
+        else if (!_isGenerating)
+        {
+            <div class="card glass-card empty-state">
+                <div class="card-body text-center">
+                    <div class="empty-icon">🎵</div>
+                    <h5>Your lyrics will appear here</h5>
+                    <p class="text-muted">Describe a situation and hit Generate to create your song</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card glass-card generating-state">
+                <div class="card-body text-center">
+                    <div class="generating-animation">
+                        <div class="spinner-grow text-primary" role="status"></div>
+                        <div class="spinner-grow text-info" role="status"></div>
+                        <div class="spinner-grow text-success" role="status"></div>
+                    </div>
+                    <h5 class="mt-3">AI is crafting your lyrics...</h5>
+                    <p class="text-muted">This may take a moment</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (_showSaveDialog)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content glass-card">
+                <div class="modal-header">
+                    <h5 class="modal-title">Save to Album</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showSaveDialog = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_albums.Count > 0)
+                    {
+                        <div class="form-group">
+                            <label>Select Album</label>
+                            <select @bind="_selectedAlbumId" class="form-control">
+                                <option value="">-- Create New Album --</option>
+                                @foreach (var album in _albums)
+                                {
+                                    <option value="@album.Id">@album.Name</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    @if (string.IsNullOrEmpty(_selectedAlbumId))
+                    {
+                        <div class="form-group">
+                            <label>New Album Name</label>
+                            <InputText @bind-Value="_newAlbumName" class="form-control" placeholder="My Fire Album 🔥" />
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_saveError))
+                    {
+                        <div class="alert alert-danger mt-2">@_saveError</div>
+                    }
+                    @if (!string.IsNullOrEmpty(_saveSuccess))
+                    {
+                        <div class="alert alert-success mt-2">@_saveSuccess</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showSaveDialog = false">Cancel</button>
+                    <button class="btn btn-success" @onclick="SaveToAlbum" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

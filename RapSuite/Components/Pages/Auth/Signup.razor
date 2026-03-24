@@ -1,0 +1,56 @@
+@page "/signup"
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-logo">🎤 RapSuite</h1>
+            <p class="auth-subtitle">AI-Powered Lyrics Creation</p>
+        </div>
+
+        <h2 class="auth-title">Create Account</h2>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">@_errorMessage</div>
+        }
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="alert alert-success">@_successMessage</div>
+        }
+
+        <EditForm Model="_signupModel" OnValidSubmit="HandleSignup" FormName="signup">
+            <div class="form-group">
+                <label for="displayName">Display Name</label>
+                <InputText id="displayName" @bind-Value="_signupModel.DisplayName" class="form-control" placeholder="Your artist name" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <InputText id="email" @bind-Value="_signupModel.Email" class="form-control" placeholder="your@email.com" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <InputText id="password" @bind-Value="_signupModel.Password" type="password" class="form-control" placeholder="Min 6 characters" />
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <InputText id="confirmPassword" @bind-Value="_signupModel.ConfirmPassword" type="password" class="form-control" placeholder="Re-enter password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-auth" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                Create Account
+            </button>
+        </EditForm>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="/login">Sign In</a></p>
+        </div>
+    </div>
+</div>

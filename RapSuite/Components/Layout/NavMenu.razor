@@ -1,0 +1,63 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">🎤 RapSuite</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        @if (Session.IsAuthenticated)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="generate">
+                    <span class="bi bi-mic-fill-nav-menu" aria-hidden="true"></span> Generate Lyrics
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="rephrase">
+                    <span class="bi bi-arrow-repeat-nav-menu" aria-hidden="true"></span> Rephrase to Rap
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="albums">
+                    <span class="bi bi-disc-fill-nav-menu" aria-hidden="true"></span> My Albums
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3 mt-4 nav-user-section">
+                <div class="nav-user-info">
+                    <small class="text-muted">Signed in as</small>
+                    <div class="nav-user-name">@(Session.DisplayName ?? Session.Email)</div>
+                </div>
+                <button class="btn btn-sm btn-outline-light mt-2 w-100" @onclick="Logout">
+                    Sign Out
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-box-arrow-in-right-nav-menu" aria-hidden="true"></span> Sign In
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="signup">
+                    <span class="bi bi-person-plus-fill-nav-menu" aria-hidden="true"></span> Sign Up
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+
