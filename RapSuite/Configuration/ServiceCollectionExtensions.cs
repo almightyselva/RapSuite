@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<IFirestoreService, FirestoreService>();
 
         // NVIDIA AI
-        services.AddHttpClient<ILyricsAiService, NvidiaLyricsAiService>();
+        services.AddSingleton<ILyricsAiService, NvidiaLyricsAiService>();
 
         // User session (scoped per Blazor Server circuit)
         services.AddScoped<UserSessionService>();
