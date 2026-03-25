@@ -1,27 +1,28 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using System.ClientModel;
+using Microsoft.Extensions.AI;
+using OpenAI;
 using RapSuite.Domain.Lyrics;
 
 namespace RapSuite.Infrastructure.AI;
 
 public class NvidiaLyricsAiService : ILyricsAiService
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
-    private readonly string _model;
+    private readonly IChatClient _chatClient;
     private readonly ILogger<NvidiaLyricsAiService> _logger;
 
-    public NvidiaLyricsAiService(HttpClient httpClient, IConfiguration configuration, ILogger<NvidiaLyricsAiService> logger)
+    public NvidiaLyricsAiService(IConfiguration configuration, ILogger<NvidiaLyricsAiService> logger)
     {
-        _httpClient = httpClient;
-        _apiKey = configuration["Nvidia:ApiKey"]
+        var apiKey = configuration["Nvidia:ApiKey"]
             ?? throw new InvalidOperationException("Nvidia:ApiKey is not configured");
-        _model = configuration["Nvidia:Model"] ?? "meta/llama-3.1-405b-instruct";
+        var model = configuration["Nvidia:Model"] ?? "meta/llama-3.1-405b-instruct";
+
         _logger = logger;
 
-        _httpClient.BaseAddress = new Uri("https://integrate.api.nvidia.com/");
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+        var openAiClient = new OpenAIClient(
+            new ApiKeyCredential(apiKey),
+            new OpenAIClientOptions { Endpoint = new Uri("https://integrate.api.nvidia.com/v1") });
+
+        _chatClient = openAiClient.GetChatClient(model).AsIChatClient();
     }
 
     public async Task<LyricsResult> GenerateLyricsAsync(GenerationRequest request)
@@ -44,43 +45,21 @@ public class NvidiaLyricsAiService : ILyricsAiService
     {
         try
         {
-            var requestBody = new
+            var messages = new List<ChatMessage>
             {
-                model = _model,
-                messages = new[]
-                {
-                    new { role = "system", content = "You are a world-class songwriter and rapper. You create powerful, authentic lyrics with strong rhythm, rhyme, and emotional depth." },
-                    new { role = "user", content = prompt }
-                },
-                temperature = 0.8,
-                top_p = 0.95,
-                max_tokens = 4096
+                new(ChatRole.System, "You are a world-class songwriter and rapper. You create powerful, authentic lyrics with strong rhythm, rhyme, and emotional depth."),
+                new(ChatRole.User, prompt)
             };
 
-            var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync("v1/chat/completions", content);
-
-            if (!response.IsSuccessStatusCode)
+            var options = new ChatOptions
             {
-                var errorBody = await response.Content.ReadAsStringAsync();
-                _logger.LogError("NVIDIA API error: {StatusCode} - {Body}", response.StatusCode, errorBody);
-                return new LyricsResult
-                {
-                    Success = false,
-                    ErrorMessage = $"AI service returned {response.StatusCode}. Please try again."
-                };
-            }
+                Temperature = 0.8f,
+                TopP = 0.95f,
+                MaxOutputTokens = 4096
+            };
 
-            var responseJson = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(responseJson);
-
-            var lyricsText = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString() ?? "";
+            var response = await _chatClient.GetResponseAsync(messages, options);
+            var lyricsText = response.Text ?? "";
 
             var (title, lyrics) = ParseResponse(lyricsText);
             var wordCount = CountWords(lyrics);

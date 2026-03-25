@@ -43,6 +43,7 @@ project.lock.json
 ## Application
 appsettings.Development.json
 appsettings.*.local.json
+**/Properties/launchSettings.json
 
 ## OS files
 Thumbs.db
