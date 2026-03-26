@@ -1,6 +1,6 @@
-using RapSuite.Domain.Lyrics;
+using RapSuite.Domain.Models;
 
-namespace RapSuite.Infrastructure.AI;
+namespace RapSuite.Domain.Interfaces;
 
 public interface ILyricsAiService
 {

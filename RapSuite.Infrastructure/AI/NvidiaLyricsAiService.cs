@@ -1,7 +1,10 @@
 using System.ClientModel;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using OpenAI;
-using RapSuite.Domain.Lyrics;
+using RapSuite.Domain.Interfaces;
+using RapSuite.Domain.Models;
 
 namespace RapSuite.Infrastructure.AI;
 
@@ -97,11 +100,7 @@ public class NvidiaLyricsAiService : ILyricsAiService
             {
                 title = line["TITLE:".Length..].Trim();
             }
-            else if (line.StartsWith("WORD_COUNT:", StringComparison.OrdinalIgnoreCase))
-            {
-                // Skip metadata
-            }
-            else
+            else if (!line.StartsWith("WORD_COUNT:", StringComparison.OrdinalIgnoreCase))
             {
                 lyricsLines.Add(line);
             }
@@ -113,7 +112,8 @@ public class NvidiaLyricsAiService : ILyricsAiService
     private static int CountWords(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return 0;
-        return text.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+        return text.AsSpan().ToString()
+            .Split([' ', '\n', '\r', '\t'], StringSplitOptions.RemoveEmptyEntries)
             .Count(w => !w.StartsWith('[') || !w.EndsWith(']'));
     }
 

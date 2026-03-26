@@ -11,7 +11,11 @@
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="*" />
     <PackageReference Include="Blazored.Toast" Version="*" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RapSuite.Domain\RapSuite.Domain.csproj" />
+    <ProjectReference Include="..\RapSuite.Infrastructure\RapSuite.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

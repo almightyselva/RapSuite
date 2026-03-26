@@ -1,5 +1,5 @@
 using RapSuite.Components;
-using RapSuite.Configuration;
+using RapSuite.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,8 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Register all RapSuite services (Firebase, AI, Session)
-builder.Services.AddRapSuiteServices(builder.Configuration);
+// Register all Infrastructure services (Firebase, AI, Session)
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 

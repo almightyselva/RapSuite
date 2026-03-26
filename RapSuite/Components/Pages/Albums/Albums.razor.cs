@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Components;
-using RapSuite.Domain.Music;
-using RapSuite.Infrastructure.Firebase;
-using RapSuite.Infrastructure.Session;
+using RapSuite.Domain.Entities;
+using RapSuite.Domain.Interfaces;
 
 namespace RapSuite.Components.Pages.Albums;
 
 public partial class Albums
 {
-    [Inject] private IFirestoreService Firestore { get; set; } = default!;
-    [Inject] private UserSessionService Session { get; set; } = default!;
+    [Inject] private IAlbumRepository AlbumRepository { get; set; } = default!;
+    [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private List<Album> _albums = new();
@@ -40,9 +39,9 @@ public partial class Albums
     private async Task LoadAlbums()
     {
         _isLoading = true;
-        if (Session.UserId != null && Session.IdToken != null)
+        if (Session.UserId != null)
         {
-            _albums = await Firestore.GetAlbumsAsync(Session.UserId, Session.IdToken);
+            _albums = await AlbumRepository.GetByUserAsync(Session.UserId);
         }
         _isLoading = false;
     }
@@ -82,7 +81,7 @@ public partial class Albums
             return;
         }
 
-        if (Session.UserId == null || Session.IdToken == null) return;
+        if (Session.UserId == null) return;
 
         _isSaving = true;
         _dialogError = null;
@@ -92,7 +91,7 @@ public partial class Albums
             if (_editingAlbum == null)
             {
                 var album = new Album { Name = _albumName };
-                var created = await Firestore.CreateAlbumAsync(Session.UserId, album, Session.IdToken);
+                var created = await AlbumRepository.CreateAsync(Session.UserId, album);
                 if (created == null)
                 {
                     _dialogError = "Failed to create album.";
@@ -102,7 +101,7 @@ public partial class Albums
             else
             {
                 _editingAlbum.Name = _albumName;
-                var success = await Firestore.UpdateAlbumAsync(Session.UserId, _editingAlbum, Session.IdToken);
+                var success = await AlbumRepository.UpdateAsync(Session.UserId, _editingAlbum);
                 if (!success)
                 {
                     _dialogError = "Failed to update album.";
@@ -127,13 +126,13 @@ public partial class Albums
 
     private async Task DeleteAlbum()
     {
-        if (_deletingAlbum == null || Session.UserId == null || Session.IdToken == null) return;
+        if (_deletingAlbum == null || Session.UserId == null) return;
 
         _isDeleting = true;
 
         try
         {
-            await Firestore.DeleteAlbumAsync(Session.UserId, _deletingAlbum.Id, Session.IdToken);
+            await AlbumRepository.DeleteAsync(Session.UserId, _deletingAlbum.Id);
             _showDeleteConfirm = false;
             _deletingAlbum = null;
             await LoadAlbums();

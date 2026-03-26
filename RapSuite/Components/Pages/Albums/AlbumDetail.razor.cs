@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Components;
-using RapSuite.Domain.Music;
-using RapSuite.Infrastructure.Firebase;
-using RapSuite.Infrastructure.Session;
+using RapSuite.Domain.Entities;
+using RapSuite.Domain.Interfaces;
 
 namespace RapSuite.Components.Pages.Albums;
 
 public partial class AlbumDetail
 {
-    [Inject] private IFirestoreService Firestore { get; set; } = default!;
-    [Inject] private UserSessionService Session { get; set; } = default!;
+    [Inject] private IAlbumRepository AlbumRepository { get; set; } = default!;
+    [Inject] private ISongRepository SongRepository { get; set; } = default!;
+    [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [Parameter]
@@ -43,10 +43,10 @@ public partial class AlbumDetail
     {
         _isLoading = true;
 
-        if (Session.UserId != null && Session.IdToken != null)
+        if (Session.UserId != null)
         {
-            _album = await Firestore.GetAlbumAsync(Session.UserId, AlbumId, Session.IdToken);
-            _songs = await Firestore.GetSongsAsync(Session.UserId, AlbumId, Session.IdToken);
+            _album = await AlbumRepository.GetByIdAsync(Session.UserId, AlbumId);
+            _songs = await SongRepository.GetByAlbumAsync(Session.UserId, AlbumId);
         }
 
         _isLoading = false;
@@ -77,7 +77,7 @@ public partial class AlbumDetail
 
     private async Task SaveSongEdit(Song song)
     {
-        if (Session.UserId == null || Session.IdToken == null) return;
+        if (Session.UserId == null) return;
 
         song.Lyrics = _editLyrics;
         song.WordCount = _editLyrics.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
@@ -87,7 +87,7 @@ public partial class AlbumDetail
         var secs = (int)((minutes - mins) * 60);
         song.EstimatedDuration = $"{mins}:{secs:D2}";
 
-        await Firestore.UpdateSongAsync(Session.UserId, AlbumId, song, Session.IdToken);
+        await SongRepository.UpdateAsync(Session.UserId, AlbumId, song);
         _editingSongId = null;
         StateHasChanged();
     }
@@ -100,13 +100,13 @@ public partial class AlbumDetail
 
     private async Task DeleteSong()
     {
-        if (_deletingSong == null || Session.UserId == null || Session.IdToken == null) return;
+        if (_deletingSong == null || Session.UserId == null) return;
 
         _isDeleting = true;
 
         try
         {
-            await Firestore.DeleteSongAsync(Session.UserId, AlbumId, _deletingSong.Id, Session.IdToken);
+            await SongRepository.DeleteAsync(Session.UserId, AlbumId, _deletingSong.Id);
             _showDeleteConfirm = false;
             _songs.Remove(_deletingSong);
             _deletingSong = null;

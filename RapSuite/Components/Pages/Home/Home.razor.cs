@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Components;
-using RapSuite.Infrastructure.Session;
+using RapSuite.Domain.Interfaces;
 
 namespace RapSuite.Components.Pages.Home;
 
 public partial class Home
 {
-    [Inject] private UserSessionService Session { get; set; } = default!;
+    [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     protected override void OnInitialized()

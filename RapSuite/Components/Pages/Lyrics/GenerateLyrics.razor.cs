@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Components;
-using RapSuite.Domain.Lyrics;
-using RapSuite.Domain.Music;
-using RapSuite.Infrastructure.AI;
-using RapSuite.Infrastructure.Firebase;
-using RapSuite.Infrastructure.Session;
+using RapSuite.Domain.Entities;
+using RapSuite.Domain.Interfaces;
+using RapSuite.Domain.Models;
 
 namespace RapSuite.Components.Pages.Lyrics;
 
 public partial class GenerateLyrics
 {
     [Inject] private ILyricsAiService AiService { get; set; } = default!;
-    [Inject] private IFirestoreService Firestore { get; set; } = default!;
-    [Inject] private UserSessionService Session { get; set; } = default!;
+    [Inject] private IAlbumRepository AlbumRepository { get; set; } = default!;
+    [Inject] private ISongRepository SongRepository { get; set; } = default!;
+    [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private string _situation = string.Empty;
@@ -71,9 +70,9 @@ public partial class GenerateLyrics
         _selectedAlbumId = string.Empty;
         _newAlbumName = string.Empty;
 
-        if (Session.IsAuthenticated && Session.IdToken != null && Session.UserId != null)
+        if (Session.IsAuthenticated && Session.UserId != null)
         {
-            _albums = await Firestore.GetAlbumsAsync(Session.UserId, Session.IdToken);
+            _albums = await AlbumRepository.GetByUserAsync(Session.UserId);
         }
 
         _showSaveDialog = true;
@@ -81,7 +80,7 @@ public partial class GenerateLyrics
 
     private async Task SaveToAlbum()
     {
-        if (_result == null || !Session.IsAuthenticated || Session.UserId == null || Session.IdToken == null)
+        if (_result == null || !Session.IsAuthenticated || Session.UserId == null)
             return;
 
         _isSaving = true;
@@ -101,7 +100,7 @@ public partial class GenerateLyrics
                 }
 
                 var newAlbum = new Album { Name = _newAlbumName };
-                var created = await Firestore.CreateAlbumAsync(Session.UserId, newAlbum, Session.IdToken);
+                var created = await AlbumRepository.CreateAsync(Session.UserId, newAlbum);
                 if (created == null)
                 {
                     _saveError = "Failed to create album.";
@@ -121,7 +120,7 @@ public partial class GenerateLyrics
                 EstimatedDuration = _result.EstimatedDuration
             };
 
-            var savedSong = await Firestore.CreateSongAsync(Session.UserId, albumId, song, Session.IdToken);
+            var savedSong = await SongRepository.CreateAsync(Session.UserId, albumId, song);
             if (savedSong != null)
             {
                 _saveSuccess = "Lyrics saved successfully! \ud83c\udf89";

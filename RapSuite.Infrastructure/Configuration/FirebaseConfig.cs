@@ -1,4 +1,4 @@
-namespace RapSuite.Configuration;
+namespace RapSuite.Infrastructure.Configuration;
 
 public class FirebaseConfig
 {

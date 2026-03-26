@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Components;
-using RapSuite.Infrastructure.Firebase;
-using RapSuite.Infrastructure.Session;
+using RapSuite.Domain.Interfaces;
 
 namespace RapSuite.Components.Pages.Auth;
 
 public partial class Login
 {
-    [Inject] private IFirebaseAuthService AuthService { get; set; } = default!;
-    [Inject] private UserSessionService Session { get; set; } = default!;
+    [Inject] private IAuthService AuthService { get; set; } = default!;
+    [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private LoginModel _loginModel = new();
@@ -41,16 +40,16 @@ public partial class Login
                 return;
             }
 
-            var (response, error) = await AuthService.SignInAsync(_loginModel.Email, _loginModel.Password);
+            var result = await AuthService.SignInAsync(_loginModel.Email, _loginModel.Password);
 
-            if (response != null)
+            if (result.IsSuccess)
             {
-                Session.SetUser(response);
+                Session.SetUser(result.Value!);
                 Navigation.NavigateTo("/");
             }
             else
             {
-                _errorMessage = FormatError(error);
+                _errorMessage = FormatError(result.Error);
             }
         }
         finally
