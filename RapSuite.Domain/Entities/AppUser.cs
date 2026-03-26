@@ -1,4 +1,4 @@
-namespace RapSuite.Domain.Music;
+namespace RapSuite.Domain.Entities;
 
 public class AppUser
 {

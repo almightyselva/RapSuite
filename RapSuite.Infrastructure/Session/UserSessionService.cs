@@ -1,10 +1,11 @@
-using RapSuite.Domain.Auth;
+using RapSuite.Domain.Interfaces;
+using RapSuite.Domain.Models;
 
 namespace RapSuite.Infrastructure.Session;
 
-public class UserSessionService
+public class UserSessionService : IUserSessionService
 {
-    public FirebaseAuthResponse? CurrentAuth { get; private set; }
+    public AuthResponse? CurrentAuth { get; private set; }
     public bool IsAuthenticated => CurrentAuth != null && !string.IsNullOrEmpty(CurrentAuth.IdToken);
     public string? UserId => CurrentAuth?.LocalId;
     public string? Email => CurrentAuth?.Email;
@@ -13,7 +14,7 @@ public class UserSessionService
 
     public event Action? OnAuthStateChanged;
 
-    public void SetUser(FirebaseAuthResponse auth)
+    public void SetUser(AuthResponse auth)
     {
         CurrentAuth = auth;
         OnAuthStateChanged?.Invoke();

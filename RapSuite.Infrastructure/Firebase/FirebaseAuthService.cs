@@ -3,12 +3,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using RapSuite.Configuration;
-using RapSuite.Domain.Auth;
+using RapSuite.Domain.Common;
+using RapSuite.Domain.Interfaces;
+using RapSuite.Domain.Models;
+using RapSuite.Infrastructure.Configuration;
 
 namespace RapSuite.Infrastructure.Firebase;
 
-public class FirebaseAuthService : IFirebaseAuthService
+public class FirebaseAuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly FirebaseConfig _config;
@@ -23,9 +25,8 @@ public class FirebaseAuthService : IFirebaseAuthService
     private string DbUrl => _config.DatabaseUrl;
     private string Key => _config.ApiKey;
 
-    public async Task<(FirebaseAuthResponse? Response, string? Error)> SignUpAsync(string email, string password)
+    public async Task<Result<AuthResponse>> SignUpAsync(string email, string password)
     {
-        // Check if email already registered
         var encodedEmail = EncodeEmail(email);
         var lookupUrl = $"{DbUrl}/emailIndex/{encodedEmail}.json?key={Key}";
         var lookupResponse = await _httpClient.GetAsync(lookupUrl);
@@ -33,7 +34,7 @@ public class FirebaseAuthService : IFirebaseAuthService
         {
             var existingUid = await lookupResponse.Content.ReadAsStringAsync();
             if (existingUid != "null")
-                return (null, "EMAIL_EXISTS");
+                return Result<AuthResponse>.Failure("EMAIL_EXISTS");
         }
 
         var userId = Guid.NewGuid().ToString("N")[..24];
@@ -47,72 +48,67 @@ public class FirebaseAuthService : IFirebaseAuthService
             createdAt = DateTime.UtcNow.ToString("o")
         };
 
-        // Store user document
         var userUrl = $"{DbUrl}/users/{userId}.json?key={Key}";
         var userResponse = await _httpClient.PutAsJsonAsync(userUrl, userData);
         if (!userResponse.IsSuccessStatusCode)
         {
             var raw = await userResponse.Content.ReadAsStringAsync();
-            return (null, $"Failed to create user: {raw}");
+            return Result<AuthResponse>.Failure($"Failed to create user: {raw}");
         }
 
-        // Store email-to-uid index for login lookup
         var indexUrl = $"{DbUrl}/emailIndex/{encodedEmail}.json?key={Key}";
         await _httpClient.PutAsJsonAsync(indexUrl, userId);
 
-        return (new FirebaseAuthResponse
+        return Result<AuthResponse>.Success(new AuthResponse
         {
             LocalId = userId,
             Email = email,
             IdToken = userId,
             RefreshToken = userId
-        }, null);
+        });
     }
 
-    public async Task<(FirebaseAuthResponse? Response, string? Error)> SignInAsync(string email, string password)
+    public async Task<Result<AuthResponse>> SignInAsync(string email, string password)
     {
-        // Look up userId by email
         var encodedEmail = EncodeEmail(email);
         var lookupUrl = $"{DbUrl}/emailIndex/{encodedEmail}.json?key={Key}";
         var lookupResponse = await _httpClient.GetAsync(lookupUrl);
         if (!lookupResponse.IsSuccessStatusCode)
-            return (null, "EMAIL_NOT_FOUND");
+            return Result<AuthResponse>.Failure("EMAIL_NOT_FOUND");
 
         var uidJson = await lookupResponse.Content.ReadAsStringAsync();
         if (uidJson is "null" or "")
-            return (null, "EMAIL_NOT_FOUND");
+            return Result<AuthResponse>.Failure("EMAIL_NOT_FOUND");
 
         var userId = JsonSerializer.Deserialize<string>(uidJson);
         if (string.IsNullOrEmpty(userId))
-            return (null, "EMAIL_NOT_FOUND");
+            return Result<AuthResponse>.Failure("EMAIL_NOT_FOUND");
 
-        // Get user data
         var userUrl = $"{DbUrl}/users/{userId}.json?key={Key}";
         var userResponse = await _httpClient.GetAsync(userUrl);
         if (!userResponse.IsSuccessStatusCode)
-            return (null, "EMAIL_NOT_FOUND");
+            return Result<AuthResponse>.Failure("EMAIL_NOT_FOUND");
 
         var userJson = await userResponse.Content.ReadAsStringAsync();
         if (userJson is "null" or "")
-            return (null, "EMAIL_NOT_FOUND");
+            return Result<AuthResponse>.Failure("EMAIL_NOT_FOUND");
 
         var user = JsonSerializer.Deserialize<UserRecord>(userJson, JsonOptions);
         if (user == null)
-            return (null, "EMAIL_NOT_FOUND");
+            return Result<AuthResponse>.Failure("EMAIL_NOT_FOUND");
 
-        // Verify password
         var passwordHash = HashPassword(password);
         if (user.PasswordHash != passwordHash)
-            return (null, "INVALID_PASSWORD");
+            return Result<AuthResponse>.Failure("INVALID_PASSWORD");
 
-        return (new FirebaseAuthResponse
+        return Result<AuthResponse>.Success(new AuthResponse
         {
             LocalId = userId,
             Email = user.Email,
             DisplayName = user.DisplayName,
             IdToken = userId,
             RefreshToken = userId
-        }, null);
+        });
     }
 
     public async Task<bool> UpdateProfileAsync(string idToken, string displayName)

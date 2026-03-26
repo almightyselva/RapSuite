@@ -1,4 +1,4 @@
-namespace RapSuite.Domain.Lyrics;
+namespace RapSuite.Domain.Models;
 
 public class GenerationRequest
 {
