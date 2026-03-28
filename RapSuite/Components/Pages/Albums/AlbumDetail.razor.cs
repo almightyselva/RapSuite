@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using RapSuite.Domain.Entities;
 using RapSuite.Domain.Interfaces;
 
@@ -10,6 +11,9 @@ public partial class AlbumDetail
     [Inject] private ISongRepository SongRepository { get; set; } = default!;
     [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private string? _copiedSongId;
 
     [Parameter]
     public string AlbumId { get; set; } = string.Empty;
@@ -122,5 +126,14 @@ public partial class AlbumDetail
         if (string.IsNullOrEmpty(lyrics) || lyrics.Length <= maxLength)
             return lyrics;
         return lyrics[..maxLength] + "...";
+    }
+
+    private async Task CopyLyricsToClipboard(string songId, string lyrics)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", lyrics);
+        _copiedSongId = songId;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copiedSongId = null;
     }
 }

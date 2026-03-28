@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using RapSuite.Domain.Entities;
 using RapSuite.Domain.Interfaces;
 using RapSuite.Domain.Models;
@@ -12,6 +13,9 @@ public partial class RephraseLyrics
     [Inject] private ISongRepository SongRepository { get; set; } = default!;
     [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private bool _copied;
 
     private string _originalLyrics = string.Empty;
     private string _language = "English";
@@ -129,5 +133,15 @@ public partial class RephraseLyrics
         {
             _isSaving = false;
         }
+    }
+
+    private async Task CopyLyricsToClipboard()
+    {
+        if (_result?.Lyrics == null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _result.Lyrics);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
     }
 }

@@ -52,6 +52,9 @@ else
                                 </div>
                             </div>
                             <div class="song-actions">
+                                <button class="btn btn-sm @(_copiedSongId == song.Id ? "btn-success" : "btn-outline-light")" @onclick="() => CopyLyricsToClipboard(song.Id, song.Lyrics)" title="Copy lyrics">
+                                    @(_copiedSongId == song.Id ? "✅" : "📋")
+                                </button>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteSong(song)" title="Delete">
                                     🗑️
                                 </button>

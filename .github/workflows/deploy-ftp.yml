@@ -1,0 +1,87 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  PROJECT_PATH: RapSuite/RapSuite.csproj
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    environment: Prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Inject app secrets
+        run: |
+          cd RapSuite
+          jq '.Firebase.ApiKey = "${{ secrets.FIREBASE_API_KEY }}" |
+              .Firebase.ProjectId = "${{ secrets.FIREBASE_PROJECT_ID }}" |
+              .Firebase.DatabaseUrl = "${{ secrets.FIREBASE_DATABASE_URL }}" |
+              .Nvidia.ApiKey = "${{ secrets.NVIDIA_API_KEY }}" |
+              .Nvidia.Model = "${{ secrets.NVIDIA_MODEL }}"' appsettings.json > tmp.json && mv tmp.json appsettings.json
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+
+      - name: Publish output
+        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -o ./publish --no-build
+
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Take site offline
+        run: |
+          echo '<html><body><h1>Updating... please wait.</h1></body></html>' > app_offline.htm
+          lftp -c "
+            set ftp:ssl-force true;
+            set ssl:verify-certificate no;
+            set ftp:passive-mode yes;
+            open -u '${{ secrets.FTP_USERNAME }}','${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
+            put -O /wwwroot/ app_offline.htm;
+            bye
+          "
+
+      - name: Wait for app to stop
+        run: sleep 5
+
+      - name: Deploy files via FTP
+        run: |
+          lftp -c "
+            set ftp:ssl-force true;
+            set ssl:verify-certificate no;
+            set ftp:passive-mode yes;
+            set net:max-retries 3;
+            open -u '${{ secrets.FTP_USERNAME }}','${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
+            mirror --reverse --delete --verbose --no-perms --parallel=5 ./publish/ /wwwroot/;
+            bye
+          "
+
+      - name: Bring site online
+        run: |
+          lftp -c "
+            set ftp:ssl-force true;
+            set ssl:verify-certificate no;
+            set ftp:passive-mode yes;
+            open -u '${{ secrets.FTP_USERNAME }}','${{ secrets.FTP_PASSWORD }}' ${{ secrets.FTP_SERVER }};
+            rm -f /wwwroot/app_offline.htm;
+            bye
+          "

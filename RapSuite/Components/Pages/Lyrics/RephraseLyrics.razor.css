@@ -1,0 +1,15 @@
+@media (max-width: 991.98px) {
+    .row {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .col-lg-7 {
+        order: -1;
+        margin-bottom: 1rem;
+    }
+
+    .col-lg-5 {
+        order: 1;
+    }
+}

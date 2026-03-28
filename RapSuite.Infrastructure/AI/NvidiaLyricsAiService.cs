@@ -28,23 +28,23 @@ public class NvidiaLyricsAiService : ILyricsAiService
         _chatClient = openAiClient.GetChatClient(model).AsIChatClient();
     }
 
-    public async Task<LyricsResult> GenerateLyricsAsync(GenerationRequest request)
+    public async Task<LyricsResult> GenerateLyricsAsync(GenerationRequest request, CancellationToken cancellationToken = default)
     {
         var prompt = PromptTemplateService.BuildGenerationPrompt(
             request.Situation, request.Language, request.Mood, request.TargetDurationMinutes);
 
-        return await CallAiAsync(prompt);
+        return await CallAiAsync(prompt, cancellationToken);
     }
 
-    public async Task<LyricsResult> RephraseLyricsAsync(RephraseRequest request)
+    public async Task<LyricsResult> RephraseLyricsAsync(RephraseRequest request, CancellationToken cancellationToken = default)
     {
         var prompt = PromptTemplateService.BuildRephrasePrompt(
             request.OriginalLyrics, request.Language, request.Mood, request.Style);
 
-        return await CallAiAsync(prompt);
+        return await CallAiAsync(prompt, cancellationToken);
     }
 
-    private async Task<LyricsResult> CallAiAsync(string prompt)
+    private async Task<LyricsResult> CallAiAsync(string prompt, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -61,7 +61,7 @@ public class NvidiaLyricsAiService : ILyricsAiService
                 MaxOutputTokens = 4096
             };
 
-            var response = await _chatClient.GetResponseAsync(messages, options);
+            var response = await _chatClient.GetResponseAsync(messages, options, cancellationToken);
             var lyricsText = response.Text ?? "";
 
             var (title, lyrics) = ParseResponse(lyricsText);
@@ -76,6 +76,10 @@ public class NvidiaLyricsAiService : ILyricsAiService
                 EstimatedDuration = estimatedDuration,
                 Success = true
             };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

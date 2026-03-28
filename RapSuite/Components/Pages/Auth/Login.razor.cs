@@ -27,6 +27,12 @@ public partial class Login
         }
     }
 
+    private void ContinueAsGuest()
+    {
+        Session.SetGuest();
+        Navigation.NavigateTo("/generate");
+    }
+
     private async Task HandleLogin()
     {
         _errorMessage = null;
