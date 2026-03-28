@@ -3,6 +3,9 @@ using RapSuite.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load local secrets (not committed to source control)
+builder.Configuration.AddJsonFile("appsettings.localhost.json", optional: true, reloadOnChange: true);
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

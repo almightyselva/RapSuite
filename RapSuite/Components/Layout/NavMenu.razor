@@ -8,11 +8,14 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+        @if (!Session.IsGuest)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+        }
 
         @if (Session.IsAuthenticated)
         {
@@ -41,6 +44,24 @@
                 </div>
                 <button class="btn btn-sm btn-outline-light mt-2 w-100" @onclick="Logout">
                     Sign Out
+                </button>
+            </div>
+        }
+        else if (Session.IsGuest)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="generate">
+                    <span class="bi bi-mic-fill-nav-menu" aria-hidden="true"></span> Generate Lyrics
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3 mt-4 nav-user-section">
+                <div class="nav-user-info">
+                    <small class="text-muted">Browsing as</small>
+                    <div class="nav-user-name">Guest</div>
+                </div>
+                <button class="btn btn-sm btn-outline-light mt-2 w-100" @onclick="SignIn">
+                    Sign In
                 </button>
             </div>
         }

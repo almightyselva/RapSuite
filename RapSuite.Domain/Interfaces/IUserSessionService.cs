@@ -6,11 +6,13 @@ public interface IUserSessionService
 {
     AuthResponse? CurrentAuth { get; }
     bool IsAuthenticated { get; }
+    bool IsGuest { get; }
     string? UserId { get; }
     string? Email { get; }
     string? DisplayName { get; }
     string? IdToken { get; }
     event Action? OnAuthStateChanged;
     void SetUser(AuthResponse auth);
+    void SetGuest();
     void ClearUser();
 }

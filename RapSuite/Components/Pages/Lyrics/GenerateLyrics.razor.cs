@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using RapSuite.Domain.Entities;
 using RapSuite.Domain.Interfaces;
 using RapSuite.Domain.Models;
@@ -12,13 +13,17 @@ public partial class GenerateLyrics
     [Inject] private ISongRepository SongRepository { get; set; } = default!;
     [Inject] private IUserSessionService Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private bool _copied;
 
     private string _situation = string.Empty;
     private string _language = "English";
     private string _mood = "Energetic";
-    private int _targetDuration = 3;
+    private int _targetDuration = 2;
     private bool _isGenerating;
     private LyricsResult? _result;
+    private CancellationTokenSource? _cts;
 
     // Save dialog
     private bool _showSaveDialog;
@@ -31,7 +36,7 @@ public partial class GenerateLyrics
 
     protected override void OnInitialized()
     {
-        if (!Session.IsAuthenticated)
+        if (!Session.IsAuthenticated && !Session.IsGuest)
         {
             Navigation.NavigateTo("/login");
         }
@@ -41,6 +46,9 @@ public partial class GenerateLyrics
     {
         if (string.IsNullOrWhiteSpace(_situation))
             return;
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
 
         _isGenerating = true;
         _result = null;
@@ -54,8 +62,33 @@ public partial class GenerateLyrics
             TargetDurationMinutes = _targetDuration
         };
 
-        _result = await AiService.GenerateLyricsAsync(request);
+        try
+        {
+            _result = await AiService.GenerateLyricsAsync(request, _cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _result = null;
+        }
+        finally
+        {
+            _isGenerating = false;
+        }
+    }
+
+    private void StopGenerating()
+    {
+        _cts?.Cancel();
         _isGenerating = false;
+    }
+
+    private void ClearForm()
+    {
+        _situation = string.Empty;
+        _language = "English";
+        _mood = "Energetic";
+        _targetDuration = 2;
+        _result = null;
     }
 
     private async Task RegenerateLyrics()
@@ -134,5 +167,15 @@ public partial class GenerateLyrics
         {
             _isSaving = false;
         }
+    }
+
+    private async Task CopyLyricsToClipboard()
+    {
+        if (_result?.Lyrics == null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _result.Lyrics);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
     }
 }

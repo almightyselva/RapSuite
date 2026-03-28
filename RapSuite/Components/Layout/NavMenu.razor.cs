@@ -13,4 +13,10 @@ public partial class NavMenu
         Session.ClearUser();
         Navigation.NavigateTo("/login");
     }
+
+    private void SignIn()
+    {
+        Session.ClearUser();
+        Navigation.NavigateTo("/login");
+    }
 }

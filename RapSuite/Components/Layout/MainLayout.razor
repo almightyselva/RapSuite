@@ -1,13 +1,19 @@
 ﻿@inherits LayoutComponentBase
 
-@if (Session.IsAuthenticated)
+@if (Session.IsAuthenticated || Session.IsGuest)
 {
-    <div class="page">
+    <div class="page @(_drawerOpen ? "" : "drawer-collapsed")">
         <div class="sidebar">
             <NavMenu />
         </div>
+        <div class="sidebar-overlay @(_drawerOpen ? "show" : "")" @onclick="ToggleDrawer"></div>
 
         <main>
+            <div class="top-bar">
+                <button class="btn btn-sm btn-drawer-toggle" @onclick="ToggleDrawer" title="Toggle menu">
+                    <span class="hamburger-icon">☰</span>
+                </button>
+            </div>
             <article class="content px-4">
                 @Body
             </article>

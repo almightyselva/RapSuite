@@ -4,25 +4,10 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "Firebase__ApiKey": "AIzaSyCe3Ce2HBx1eh6i8ERoP8GLKotC2-_MkWI",
-        "Firebase__DatabaseUrl": "https://rapsuite-81afd-default-rtdb.firebaseio.com",
-        "Nvidia__ApiKey": "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"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5036"
-    },
-    "RapSuite": {
-      "commandName": "Project",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "Firebase__ApiKey": "AIzaSyCe3Ce2HBx1eh6i8ERoP8GLKotC2-_MkWI",
-        "Firebase__DatabaseUrl": "https://rapsuite-81afd-default-rtdb.firebaseio.com",
-        "Nvidia__ApiKey": "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"
-      },
-      "dotnetRunMessages": true,
-      "applicationUrl": "https://localhost:7078;http://localhost:5036"
     }
   },
   "$schema": "https://json.schemastore.org/launchsettings.json"
